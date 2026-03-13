@@ -146,6 +146,14 @@ router.post('/sync', async (req, res) => {
             });
         }
 
+        const now = new Date().toISOString();
+        const previousLogin = finalUser.last_login || null;
+
+        await supabaseAdmin.from('users').update({
+            last_login: now,
+            previous_login: previousLogin
+        }).eq('id', finalUser.id);
+        
         // 5. Generate Backend Token (consistent with login-admin)
         // Admin tokens last 30 days for convenience (user can still logout manually)
         const backendToken = jwt.sign(
@@ -162,7 +170,9 @@ router.post('/sync', async (req, res) => {
             email: finalUser.email,
             role: finalUser.role,
             avatar: finalUser.photos || finalUser.avatar,
-            verification: finalUser.verification
+            verification: finalUser.verification,
+            last_login: now,
+            previous_login: previousLogin
         };
         res.json({ success: true, user: userPayload, token: backendToken });
 

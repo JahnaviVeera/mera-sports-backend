@@ -666,6 +666,14 @@ export const loginAdmin = async (req, res) => {
             return res.status(403).json({ success: false, code: 'ADMIN_REJECTED', message: "Application rejected." });
         }
 
+        const now = new Date().toISOString();
+        const previousLogin = user.last_login || null;
+
+        await supabaseAdmin.from("users").update({
+            last_login: now,
+            previous_login: previousLogin
+        }).eq("id", user.id);
+
         // Admin tokens last 30 days for convenience (user can still logout manually)
         const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
@@ -675,7 +683,16 @@ export const loginAdmin = async (req, res) => {
         res.json({
             success: true,
             token,
-            user: { id: user.id, name: user.name, email: user.email, role: user.role, avatar: user.photos, verification: user.verification },
+            user: { 
+                id: user.id, 
+                name: user.name, 
+                email: user.email, 
+                role: user.role, 
+                avatar: user.photos, 
+                verification: user.verification,
+                last_login: now,
+                previous_login: previousLogin
+            },
         });
 
     } catch (err) {
@@ -692,7 +709,7 @@ export const getCurrentUser = async (req, res) => {
         if (!token) return res.status(401).json({ message: "No token provided" }); // Double check
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const { data: user, error } = await supabaseAdmin.from("users").select("id, name, email, role, photos, verification").eq("id", decoded.id).maybeSingle();
+        const { data: user, error } = await supabaseAdmin.from("users").select("id, name, email, role, photos, verification, last_login, previous_login").eq("id", decoded.id).maybeSingle();
 
         if (error || !user) return res.status(404).json({ message: "User not found" });
 
@@ -704,7 +721,9 @@ export const getCurrentUser = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 avatar: user.photos,
-                verification: user.verification
+                verification: user.verification,
+                last_login: user.last_login,
+                previous_login: user.previous_login
             }
         });
     } catch (err) {

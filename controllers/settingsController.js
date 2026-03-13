@@ -16,7 +16,7 @@ export const getSettings = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
     try {
-        const { platformName, supportEmail, supportPhone, logoUrl, logoSize } = req.body;
+        const { platformName, supportEmail, supportPhone, logoUrl, logoSize, playerBannerUrl } = req.body;
         const { data: settings, error } = await supabaseAdmin
             .from("platform_settings")
             .upsert({
@@ -27,6 +27,7 @@ export const updateSettings = async (req, res) => {
                 logo_url: logoUrl,
                 logo_size: logoSize,
                 registration_config: req.body.registrationConfig,
+                player_banner_url: playerBannerUrl,
                 updated_at: new Date()
             })
             .select()
